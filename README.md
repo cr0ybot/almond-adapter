@@ -2,7 +2,7 @@
 Almond Adapter
 ==============
 
-[![mozilla-iot addon](https://img.shields.io/badge/mozilla--iot-addon-blue.svg?logo=mozilla&logoColor=white&colorA=black&colorB=5d9bc7)](ttps://iot.mozilla.org/)
+[![mozilla-iot addon](https://img.shields.io/badge/mozilla--iot-addon-blue.svg?logo=mozilla&logoColor=white&colorA=black&colorB=5d9bc7)](https://iot.mozilla.org/)
 
 [Securifi Almond](https://www.securifi.com/almond) adapter plugin for Mozilla IoT Gateway
 
