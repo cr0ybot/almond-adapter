@@ -1,0 +1,65 @@
+{
+  "name": "almond-adapter",
+  "display_name": "Almond",
+  "version": "0.1.0",
+  "description": "Securifi Almond adapter plugin for Mozilla IoT Gateway",
+  "author": "Cory Hughart",
+  "license": "MPL-2.0",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "mozilla",
+    "iot",
+    "adapter",
+    "almond"
+  ],
+  "homepage": "https://github.com/cr0ybot/almond-adapter#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cr0ybot/almond-adapter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cr0ybot/almond-adapter/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.12.0"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "SHA256SUMS",
+    "index.js",
+    "package.json",
+    "almond-adapter.js"
+  ],
+  "moziot": {
+    "api": {
+      "min": 2,
+      "max": 2
+    },
+    "enabled": true,
+    "plugin": true,
+    "exec": "{nodeLoader} {path}",
+    "config": {
+      "username": "",
+      "password": ""
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Almond web interface login username"
+        },
+        "password": {
+          "type": "string",
+          "description": "Almond web interface login password"
+        }
+      }
+    }
+  }
+}
