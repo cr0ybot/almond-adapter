@@ -4,6 +4,7 @@
 *.tmp
 SHA256SUMS
 .DS_Store
+dist/*
 
 ## Node
 
