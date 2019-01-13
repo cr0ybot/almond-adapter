@@ -18,4 +18,4 @@ For ease of development, the file `run.sh` will copy the addon to a local RPi Th
 
 ## Disclaimer
 
-This is an unofficial plugin that is not endorsed or affiliated with Securifi Inc. or its subsidiaries.
+This is an unofficial plugin that is not endorsed by or affiliated with Securifi Inc. or its subsidiaries.
