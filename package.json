@@ -46,8 +46,8 @@
     "plugin": true,
     "exec": "{nodeLoader} {path}",
     "config": {
-      "AlmondIP": "0.0.0.0",
       "AlmondLogin": {
+        "ipAddress": "0.0.0.0",
         "username": "",
         "password": ""
       }
@@ -55,14 +55,14 @@
     "schema": {
       "type": "object",
       "properties": {
-        "AlmondIP": {
-          "type": "string",
-          "description": "IP address of the Almond router on the LAN"
-        },
         "AlmondLogin": {
           "type": "object",
-          "description": "Almond web interface username & password",
+          "description": "Almond web interface login",
           "properties": {
+            "ipAddress": {
+              "type": "string",
+              "description": "IP address of the Almond router on the LAN"
+            },
             "username": {
               "type": "string"
             },
@@ -72,6 +72,7 @@
             }
           },
           "required": [
+            "ipAddress",
             "username",
             "password"
           ]
