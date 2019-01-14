@@ -66,6 +66,7 @@ module.exports = {
         'FunctionExpression': {
           'parameters': 'first'
         },
+        'MemberExpression': 'off',
         'ObjectExpression': 'first',
         'SwitchCase': 1
       }
@@ -94,7 +95,7 @@ module.exports = {
       'always'
     ],
     'max-len': [
-      'error',
+      'warn',
       80
     ],
     'multiline-ternary': [
@@ -120,7 +121,7 @@ module.exports = {
     'no-self-compare': 'error',
     'no-sequences': 'error',
     'no-shadow-restricted-names': 'error',
-    //'no-tabs': 'error',
+    'no-tabs': 'off',
     'no-trailing-spaces': 'error',
     'no-undefined': 'error',
     'no-unmodified-loop-condition': 'error',
