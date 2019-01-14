@@ -41,7 +41,10 @@ module.exports = {
       'error',
       'never'
     ],
-    'curly': 'error',
+    'curly': [
+      'error',
+      'multi'
+    ],
     'dot-notation': 'error',
     'eol-last': 'error',
     'func-call-spacing': [

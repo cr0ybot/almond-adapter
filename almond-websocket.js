@@ -42,7 +42,7 @@ class AlmondWebsocket {
 		return new Promise((resolve, reject) => {
 			this.ws = new WebSocket(`ws://${this.ip}:7681/${this.username}/${this.password}`);
 
-			var self = this;
+			const self = this;
 			this.ws.onopen = function() {
 				console.log(TAG, 'websocket opened');
 				self.ws.onmessage = self.onmessage;
@@ -66,7 +66,7 @@ class AlmondWebsocket {
 
 	send(data) {
 		return new Promise((resolve, reject) => {
-			let mii = generateMii();
+			const mii = this.generateMii();
 
 			console.log(TAG, 'sending data with mii:', mii);
 
@@ -76,7 +76,7 @@ class AlmondWebsocket {
 				sent: data,
 				resolve: resolve,
 				reject: reject,
-			}
+			};
 		});
 	}
 
@@ -84,22 +84,22 @@ class AlmondWebsocket {
 		console.log(TAG, 'onmessage');
 
 		if (!message.hasOwnProperty('data')) return;
-		let d = message.data;
+		const d = message.data;
 
 		console.log(d);
 
 		// Check if message is a response to a request
 		if (d.hasOwnProperty('MobileInternalIndex')) {
-			let mii = d.MobileInternalIndex;
+			const mii = d.MobileInternalIndex;
 			if (this.messageQueue.hasOwnProperty(mii)) {
 				let mq = this.messageQueue[mii];
-				let resp = {
+				const resp = {
 					sent: mq.sent,
 					received: d,
 					sentTimestamp: mq.timestamp,
 					receivedTimestamp: Date.now(),
-				}
-				console.log(TAG, 'resolving request for mii:',  mii);
+				};
+				console.log(TAG, 'resolving request for mii:', mii);
 				console.log(resp);
 				mq.resolve(resp);
 				mq = null;
@@ -109,11 +109,11 @@ class AlmondWebsocket {
 	}
 
 	onerror(error) {
-
+		// TODO: ?
 	}
 
 	generateMii() {
-		return ''+Math.floor(Math.pow(10, miiLength-1) + Math.random() * (Math.pow(10, miiLength) - Math.pow(10, miiLength-1) - 1));
+		return '' + Math.floor(Math.pow(10, miiLength - 1) + Math.random() * (Math.pow(10, miiLength) - Math.pow(10, miiLength - 1) - 1));
 	}
 }
 
