@@ -8,9 +8,9 @@
 
 'use strict';
 
-const AlmondWebsocket = require('./almond-websocket');
-
 const TAG = 'AlmondAdapter:';
+
+const AlmondController = require('./almond-controller');
 
 let Adapter;
 try {
@@ -28,7 +28,7 @@ let adapterManifest;
 
 class AlmondAdapter extends Adapter {
 
-	constructor(addonManager, packageName, websocketManager) {
+	constructor(addonManager, packageName, controller) {
 		// TODO: Is the possibility of more than one Almond high enough to support?
 		super(addonManager, 'AlmondAdapter', packageName);
 
@@ -44,8 +44,13 @@ class AlmondAdapter extends Adapter {
 		 * ready
 		 */
 
-		this.wsm = websocketManager;
+		this.controller = controller;
 		this.ready = true;
+
+		this.pairingMii = null;
+		this.pairingTimer = null;
+
+		this.manager.addAdapter(this);
 
 		console.log(TAG, 'initialized');
 	}
@@ -53,6 +58,38 @@ class AlmondAdapter extends Adapter {
 	dump() {
 		console.log(TAG);
 		console.log('ready:', this.ready);
+	}
+
+	addAllDevices(deviceList) {
+		console.log(TAG, 'adding devices...');
+		console.log(deviceList);
+	}
+
+	startPairing(timeoutSeconds) {
+		console.log(TAG, 'starting pairing mode');
+
+		this.controller.getDeviceList()
+		.then((deviceList) => {
+			clearTimeout(this.pairingTimer);
+
+			this.addAllDevices(deviceList);
+		});
+
+		this.pairingTimer = setTimeout(this.cancelPairing, timeoutSeconds * 1000);
+	}
+
+	cancelPairing() {
+		clearTimeout(this.pairingTimer);
+
+		console.log(TAG, 'cancelling pairing mode');
+		this.controller.cancelGetDeviceList();
+	}
+
+	unload() {
+		return this.controller.disconnect()
+		.then(() => {
+			this.controller = null;
+		});
 	}
 }
 
@@ -63,14 +100,15 @@ function loadAlmondAdapter(addonManager, manifest, errorCallback) {
 	adapterManifest = manifest;
 	const c = manifest.moziot.config.AlmondLogin;
 
-	// Attempt to open websocket, pass to adapter constructor or invoke errorCallback
-	new AlmondWebsocket(c.ipAddress, c.username, c.password)
-	.open()
-	.then((ws) => {
-		new AlmondAdapter(addonManager, manifest.name, ws);
-	})
+	// Attempt to start controller, pass to adapter constructor
+	// or invoke errorCallback
+	new AlmondController(c)
+	.connect()
 	.catch((e) => {
 		errorCallback(manifest.id, e);
+	})
+	.then((controller) => {
+		new AlmondAdapter(addonManager, manifest.name, controller);
 	});
 }
 
