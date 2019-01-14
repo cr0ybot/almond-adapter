@@ -16,9 +16,7 @@ let Adapter;
 try {
 	Adapter = require('../adapter');
 } catch (e) {
-	if (e.code !== 'MODULE_NOT_FOUND') {
-		throw e;
-	}
+	if (e.code !== 'MODULE_NOT_FOUND') throw e;
 
 	const gwa = require('gateway-addon');
 	Adapter = gwa.Adapter;

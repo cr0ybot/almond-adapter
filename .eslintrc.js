@@ -42,7 +42,7 @@ module.exports = {
       'never'
     ],
     'curly': [
-      'error',
+      'warn',
       'multi'
     ],
     'dot-notation': 'error',
