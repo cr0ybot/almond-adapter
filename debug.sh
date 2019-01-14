@@ -3,10 +3,7 @@
 # This script is meant to run on the RPi to restart Things Gateway in debug mode
 
 function restart {
-	echo "#### Stopping debug mode..."
-	kill -SIGINT $(pgrep -f "(node build/gateway.js -d)|(src/addon-loader.js)")
-
-	sleep 5
+	echo "#### Debug mode ended"
 
 	echo "#### Restarting gateway..."
 	sudo systemctl start mozilla-iot-gateway

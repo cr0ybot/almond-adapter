@@ -7,6 +7,9 @@ HOST="gateway.local"
 DEST="~/.mozilla-iot/addons/almond-adapter/"
 EXCLUDE="node_modules/"
 
+echo "#### Running almond-adapter on local gateway in debug mode"
+echo "#### Use Ctrl-C to exit and restart gateway in normal mode"
+
 echo "#### Copying Almond Adaper files to rpi..."
 
 rsync -avzP --delete --exclude ".git/*" --exclude "run.sh" . "${USER}@${HOST}:${DEST}"
