@@ -56,16 +56,16 @@ class AlmondController {
 
 	connect() {
 		return new Promise((resolve, reject) => {
+			// eslint-disable-next-line
 			this.ws = new WebSocket(`ws://${this.config.ipAddress}:7681/${this.config.username}/${this.config.password}`);
 
-			const self = this;
 			this.ws.onopen = function() {
 				console.log(TAG, 'websocket opened');
-				self.ws.onmessage = self.onmessage;
-				self.ws.onerror = self.onerror;
-				resolve(self);
-				self.ws.onopen = null;
-			};
+				this.ws.onmessage = this.onmessage.bind(this);
+				this.ws.onerror = this.onerror.bind(this);
+				resolve(this);
+				this.ws.onopen = null;
+			}.bind(this);
 			this.ws.onerror = function(err) {
 				console.error(TAG, 'websocket could not be opened');
 				reject(err);
@@ -94,11 +94,17 @@ class AlmondController {
 			CommandType: 'DeviceList',
 		};
 
-		const s = this.send(req);
+		const s = this.sendRequest(req);
 
 		this.getDeviceListMii = s.mii;
 
-		return s.promise;
+		return s.promise
+		.then((resp) => {
+			if (resp.received && resp.received.hasOwnProperty('Devices')) {
+				return resp.received.Devices;
+			}
+			return {};
+		});
 	}
 
 	cancelGetDeviceList() {
@@ -107,9 +113,14 @@ class AlmondController {
 			return;
 		}
 
-		this.cancelSend(this.getDeviceListMii);
+		this.cancelRequest(this.getDeviceListMii);
 		this.getDeviceListMii = null;
 	}
+
+
+	/**
+	 * Request Management
+	 */
 
 	/**
 	 * Sends data to the websocket and returns a Deferred object that contains
@@ -119,22 +130,49 @@ class AlmondController {
 	 * @param {Object} data JSON message
 	 * @return {Deferred} wrapped Promise
 	 */
-	send(data) {
+	sendRequest(data) {
 		const mii = this.generateMii();
 		const deferred = new Deferred();
 		deferred.mii = mii;
 
 		console.log(TAG, 'sending data with mii:', mii);
-
 		data.MobileInternalIndex = mii;
+		console.log(JSON.stringify(data));
+
 		this.messageQueue[mii] = {
 			timestamp: Date.now(),
 			sent: data,
-			resolve: deferred.resolve,
-			reject: deferred.reject,
+			resolve: deferred.resolve.bind(deferred),
+			reject: deferred.reject.bind(deferred),
 		};
 
+		this.ws.send(JSON.stringify(data));
+
 		return deferred;
+	}
+
+	resolveRequest(mii, data) {
+		console.log(TAG, 'resolving request with mii:', mii);
+
+		if (this.messageQueue.hasOwnProperty(mii)) {
+			let mq = this.messageQueue[mii];
+			const resp = {
+				mii: mii,
+				sent: mq.sent,
+				received: data,
+				cancelled: false,
+				sentTimestamp: mq.timestamp,
+				receivedTimestamp: Date.now(),
+			};
+			console.log(JSON.stringify(resp));
+			mq.resolve(resp);
+			mq = null;
+			delete this.messageQueue[mii];
+			console.log(TAG, 'request resolved');
+			return;
+		}
+
+		console.log(TAG, 'no request to resolve for mii:', mii);
 	}
 
 	/**
@@ -143,7 +181,9 @@ class AlmondController {
 	 * @param {String} mii MobileInternalIndex
 	 * @return {boolean} success or failure
 	 */
-	cancelSend(mii) {
+	cancelRequest(mii) {
+		console.log(TAG, 'cancelling request with mii:', mii);
+
 		if (this.messageQueue.hasOwnProperty(mii)) {
 			let mq = this.messageQueue[mii];
 			const resp = {
@@ -157,47 +197,52 @@ class AlmondController {
 			mq.reject(resp);
 			mq = null;
 			delete this.messageQueue[mii];
+			console.log(TAG, 'request cancelled');
 			return true;
 		}
 
+		console.log(TAG, 'request not found (already resolved?)');
 		return false;
 	}
+
+
+	/**
+	 * Event Handlers
+	 */
 
 	onmessage(message) {
 		console.log(TAG, 'onmessage');
 
 		if (!message.hasOwnProperty('data')) return;
 		const d = message.data;
-
 		console.log(d);
 
-		// Check if message is a response to a request
-		if (d.hasOwnProperty('MobileInternalIndex')) {
-			const mii = d.MobileInternalIndex;
-			if (this.messageQueue.hasOwnProperty(mii)) {
-				let mq = this.messageQueue[mii];
-				const resp = {
-					mii: mii,
-					sent: mq.sent,
-					received: d,
-					cancelled: false,
-					sentTimestamp: mq.timestamp,
-					receivedTimestamp: Date.now(),
-				};
-				console.log(TAG, 'resolving request for mii:', mii);
-				console.log(resp);
-				mq.resolve(resp);
-				mq = null;
-				delete this.messageQueue[mii];
-			}
+		let data = {};
+		try {
+			data = JSON.parse(d);
 		}
+		catch (e) {
+			console.warn(TAG, 'message was not parsable');
+		}
+
+		// Check if message is a response to a request
+		if (data.hasOwnProperty('MobileInternalIndex')) {
+			this.resolveRequest(data.MobileInternalIndex, data);
+		}
+		// TODO: else, could be device event/update message
 	}
 
 	onerror(error) {
 		// TODO: ?
 	}
 
+
+	/**
+	 * Utilities
+	 */
+
 	generateMii() {
+		// eslint-disable-next-line
 		return '' + Math.floor(Math.pow(10, miiLength - 1) + Math.random() * (Math.pow(10, miiLength) - Math.pow(10, miiLength - 1) - 1));
 	}
 }

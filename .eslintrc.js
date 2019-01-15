@@ -26,7 +26,7 @@ module.exports = {
     ],
     'brace-style': [
       'error',
-      '1tbs'
+      'stroustrup'
     ],
     'comma-dangle': [
       'error',
@@ -43,7 +43,7 @@ module.exports = {
     ],
     'curly': [
       'warn',
-      'multi'
+      'multi-line'
     ],
     'dot-notation': 'error',
     'eol-last': 'error',

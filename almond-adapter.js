@@ -29,7 +29,7 @@ let adapterManifest;
 class AlmondAdapter extends Adapter {
 
 	constructor(addonManager, packageName, controller) {
-		// TODO: Is the possibility of more than one Almond high enough to support?
+		// TODO: Is it worth supporting multiple Almonds?
 		super(addonManager, 'AlmondAdapter', packageName);
 
 		/**
@@ -62,7 +62,11 @@ class AlmondAdapter extends Adapter {
 
 	addAllDevices(deviceList) {
 		console.log(TAG, 'adding devices...');
-		console.log(deviceList);
+
+		for (const id of Object.keys(deviceList)) {
+			console.log(TAG, 'found device:', id);
+			console.log(JSON.stringify(deviceList[id].Data));
+		}
 	}
 
 	startPairing(timeoutSeconds) {
