@@ -10,17 +10,8 @@
 
 const TAG = 'AlmondController:';
 
+const {Deferred} = require('gateway-addon');
 const WebSocket = require('ws');
-
-let Deferred;
-try {
-	Deferred = require('../deferred');
-} catch (e) {
-	if (e.code !== 'MODULE_NOT_FOUND') throw e;
-
-	const gwa = require('gateway-addon');
-	Deferred = gwa.Deferred;
-}
 
 const miiLength = 16;
 
@@ -76,11 +67,17 @@ class AlmondController {
 	disconnect() {
 		if (this.ws) {
 			return new Promise((resolve, reject) => {
-				this.ws.onclose = function() {
+				this.ws.onclose = () => {
+					this.ws = null;
 					resolve();
-				}
+				};
 				this.ws.close();
-				this.ws = null;
+				setTimeout(() => {
+					// Dirty cleanup
+					this.ws.onclose = null;
+					this.ws = null;
+					reject('Timed out attempting to disconnect from websocket');
+				}, 5000);
 			});
 		}
 
