@@ -20,4 +20,4 @@ sleep 5
 
 echo "#### Starting gateway in debug mode..."
 cd ~/mozilla-iot/gateway
-npm start -- -d
+npm run debug -- -d
