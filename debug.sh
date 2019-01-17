@@ -20,4 +20,9 @@ sleep 5
 
 echo "#### Starting gateway in debug mode..."
 cd ~/mozilla-iot/gateway
-npm run debug -- -d
+
+# Running the debug script doesn't really help, since you can't remotely connect
+# a debugger unless the gateway debug script is altered to read:
+# "webpack && node --inspect=0.0.0.0:9229 build/gateway.js"
+#npm run debug -- -d
+npm start -- -d
