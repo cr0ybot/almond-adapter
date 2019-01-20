@@ -8,9 +8,9 @@ Almond Adapter
 
 An Unofficial [Securifi Almond](https://www.securifi.com/almond) adapter plugin for Mozilla IoT Gateway
 
-Exposes Z-Wave and ZigBee devices connected to Almond to the Things Gateway via the [Websockets API](https://wiki.securifi.com/index.php/Websockets_Documentation).
+Exposes Z-Wave, ZigBee, and other supported devices connected to Almond to the Things Gateway via the [Websockets API](https://wiki.securifi.com/index.php/Websockets_Documentation).
 
-Developed using [Almond+ (2014)](https://www.securifi.com/almondplus)
+Developed using [Almond+ (2014)](https://www.securifi.com/almondplus). __You must have firmware R089 or newer to use this adapter.__
 
 ## Development
 
