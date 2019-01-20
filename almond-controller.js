@@ -17,14 +17,21 @@ const miiLength = 16;
 
 class AlmondController {
 
-	constructor(config) {
-		if (!config.hasOwnProperty('ipAddress') ||
-		!config.hasOwnProperty('username') ||
-		!config.hasOwnProperty('password')) {
+	/**
+	 * Initialize AlmondController with config
+	 *
+	 * @since 1.0.0
+	 * @param {Object} config Add-on settings config
+	 * @param {String} config.ipAddress
+	 * @param {String} config.username
+	 * @param {String} config.password
+	 */
+	constructor({ipAddress = false, username = false, password = false}) {
+		if (!ipAddress || !username || !password) {
 			throw new Error('Could not connect to Almond: configuration incomplete');
 		}
 
-		this.config = config;
+		this.config = arguments[0];
 		this.ws = null;
 
 		/**
@@ -42,9 +49,21 @@ class AlmondController {
 		 */
 		this.messageQueue = {};
 
+		/**
+		 * Since {@link getDeviceList} is cancellable, we keep a reference to
+		 * it's mii to remove it from the messageQueue
+		 *
+		 * @type {String|null}
+		 */
 		this.getDeviceListMii = null;
 	}
 
+	/**
+	 * Connect to Almond websocket API
+	 *
+	 * @since 1.0.0
+	 * @return {Promise} Resolves with this AlmondController on success
+	 */
 	connect() {
 		return new Promise((resolve, reject) => {
 			// eslint-disable-next-line
@@ -64,6 +83,12 @@ class AlmondController {
 		});
 	}
 
+	/**
+	 * Disconnect gracefully from the websocket API
+	 *
+	 * @since 1.0.0
+	 * @return {Promise} Resolves on websocket close
+	 */
 	disconnect() {
 		if (this.ws) {
 			return new Promise((resolve, reject) => {
@@ -84,6 +109,17 @@ class AlmondController {
 		return Promise.reject();
 	}
 
+
+	/**
+	 * High-level device API
+	 */
+
+	/**
+	 * Get list of devices connected to Almond
+	 *
+	 * @since 1.0.0
+	 * @return {Promise} Promise that resolves with DeviceList JSON
+	 */
 	getDeviceList() {
 		console.log(TAG, 'getting device list...');
 
@@ -104,6 +140,11 @@ class AlmondController {
 		});
 	}
 
+	/**
+	 * Cancels request for DeviceList
+	 *
+	 * @since 1.0.0
+	 */
 	cancelGetDeviceList() {
 		if (!this.getDeviceListMii) {
 			console.log(TAG, 'pairing mode already stopped');
@@ -124,8 +165,9 @@ class AlmondController {
 	 * a promise and the mii in case the request needs to be cancelled and
 	 * removed from the queue.
 	 *
+	 * @since 1.0.0
 	 * @param {Object} data JSON message
-	 * @return {Deferred} wrapped Promise
+	 * @return {Deferred} Wrapped Promise
 	 */
 	sendRequest(data) {
 		const mii = this.generateMii();
@@ -148,6 +190,13 @@ class AlmondController {
 		return deferred;
 	}
 
+	/**
+	 * Resolves a request in the messageQueue
+	 *
+	 * @since 1.0.0
+	 * @param {String} mii MobileInternalIndex
+	 * @param {Object} data Response data
+	 */
 	resolveRequest(mii, data) {
 		console.log(TAG, 'resolving request with mii:', mii);
 
@@ -175,6 +224,7 @@ class AlmondController {
 	/**
 	 * Removes a message from the queue and calls its reject callback
 	 *
+	 * @since 1.0.0
 	 * @param {String} mii MobileInternalIndex
 	 * @return {boolean} success or failure
 	 */
@@ -207,6 +257,12 @@ class AlmondController {
 	 * Event Handlers
 	 */
 
+	/**
+	 * All messages from the websocket are received here
+	 *
+	 * @since 1.0.0
+	 * @param {String} message Message from websocket
+	 */
 	onmessage(message) {
 		console.log(TAG, 'onmessage');
 
@@ -238,6 +294,14 @@ class AlmondController {
 	 * Utilities
 	 */
 
+	/**
+	 * Generates a MobileInternalIndex (mii) for requests to the WebSocket API
+	 *
+	 * Responses from the API are matched with the mii.
+	 *
+	 * @since 1.0.0
+	 * @return {String} MobileInternalIndex
+	 */
 	generateMii() {
 		// eslint-disable-next-line
 		return '' + Math.floor(Math.pow(10, miiLength - 1) + Math.random() * (Math.pow(10, miiLength) - Math.pow(10, miiLength - 1) - 1));

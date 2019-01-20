@@ -48,8 +48,8 @@
     "config": {
       "AlmondLogin": {
         "ipAddress": "0.0.0.0",
-        "username": "",
-        "password": ""
+        "username": false,
+        "password": false
       }
     },
     "schema": {
