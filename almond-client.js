@@ -15,6 +15,19 @@ const WebSocket = require('ws');
 
 const miiLength = 16;
 
+/**
+ * Symbols for private methods
+ */
+const messageHandler = Symbol('messageHandler');
+const errorHandler = Symbol('errorHandler');
+
+/**
+ * Symbols for private properties
+ */
+const ws = Symbol('ws');
+const messageQueue = Symbol('messageQueue');
+const cancellable = Symbol('cancellable');
+
 class AlmondClient {
 
 	/**
@@ -32,7 +45,7 @@ class AlmondClient {
 		}
 
 		this.config = arguments[0];
-		this.ws = null;
+		this[ws] = null;
 
 		/**
 		 * Holds sent messages using mii as key to match against responses
@@ -45,17 +58,19 @@ class AlmondClient {
 		 *   reject: ##rejectCallback##
 		 * }
 		 *
+		 * @private
 		 * @type {Object}
 		 */
-		this.messageQueue = {};
+		this[messageQueue] = {};
 
 		/**
-		 * Since {@link getDeviceList} is cancellable, we keep a reference to
-		 * it's mii to remove it from the messageQueue
+		 * Since some methods are "cancellable", we keep a reference to
+		 * their mii to remove it from the messageQueue
 		 *
-		 * @type {String|null}
+		 * @private
+		 * @type {Object}
 		 */
-		this.getDeviceListMii = null;
+		this[cancellable] = {};
 	}
 
 	/**
@@ -67,16 +82,16 @@ class AlmondClient {
 	connect() {
 		return new Promise((resolve, reject) => {
 			// eslint-disable-next-line
-			this.ws = new WebSocket(`ws://${this.config.ipAddress}:7681/${this.config.username}/${this.config.password}`);
+			this[ws] = new WebSocket(`ws://${this.config.ipAddress}:7681/${this.config.username}/${this.config.password}`);
 
-			this.ws.onopen = function() {
+			this[ws].onopen = function() {
 				console.log(TAG, 'websocket opened');
-				this.ws.onmessage = this.onmessage.bind(this);
-				this.ws.onerror = this.onerror.bind(this);
+				this[ws].onmessage = this[messageHandler].bind(this);
+				this[ws].onerror = this[errorHandler].bind(this);
 				resolve(this);
-				this.ws.onopen = null;
+				this[ws].onopen = null;
 			}.bind(this);
-			this.ws.onerror = function(err) {
+			this[ws].onerror = function(err) {
 				console.error(TAG, 'websocket could not be opened');
 				reject(err);
 			};
@@ -90,17 +105,17 @@ class AlmondClient {
 	 * @return {Promise} Resolves on websocket close
 	 */
 	disconnect() {
-		if (this.ws) {
+		if (this[ws]) {
 			return new Promise((resolve, reject) => {
-				this.ws.onclose = () => {
-					this.ws = null;
+				this[ws].onclose = () => {
+					this[ws] = null;
 					resolve();
 				};
-				this.ws.close();
+				this[ws].close();
 				setTimeout(() => {
 					// Dirty cleanup
-					this.ws.onclose = null;
-					this.ws = null;
+					this[ws].onclose = null;
+					this[ws] = null;
 					reject('Timed out attempting to disconnect from websocket');
 				}, 5000);
 			});
@@ -129,7 +144,7 @@ class AlmondClient {
 
 		const s = this.sendRequest(req);
 
-		this.getDeviceListMii = s.mii;
+		this[cancellable].getDeviceList = s.mii;
 
 		return s.promise
 		.then((resp) => {
@@ -146,13 +161,13 @@ class AlmondClient {
 	 * @since 1.0.0
 	 */
 	cancelGetDeviceList() {
-		if (!this.getDeviceListMii) {
+		if (!this[cancellable].hasOwnProperty('getDeviceList')) {
 			console.log(TAG, 'pairing mode already stopped');
 			return;
 		}
 
-		this.cancelRequest(this.getDeviceListMii);
-		this.getDeviceListMii = null;
+		this.cancelRequest(this[cancellable].getDeviceList);
+		delete this[cancellable].getDeviceList;
 	}
 
 
@@ -178,14 +193,14 @@ class AlmondClient {
 		data.MobileInternalIndex = mii;
 		console.log(JSON.stringify(data));
 
-		this.messageQueue[mii] = {
+		this[messageQueue][mii] = {
 			timestamp: Date.now(),
 			sent: data,
 			resolve: deferred.resolve.bind(deferred),
 			reject: deferred.reject.bind(deferred),
 		};
 
-		this.ws.send(JSON.stringify(data));
+		this[ws].send(JSON.stringify(data));
 
 		return deferred;
 	}
@@ -200,8 +215,8 @@ class AlmondClient {
 	resolveRequest(mii, data) {
 		console.log(TAG, 'resolving request with mii:', mii);
 
-		if (this.messageQueue.hasOwnProperty(mii)) {
-			let mq = this.messageQueue[mii];
+		if (this[messageQueue].hasOwnProperty(mii)) {
+			let mq = this[messageQueue][mii];
 			const resp = {
 				mii: mii,
 				sent: mq.sent,
@@ -213,7 +228,7 @@ class AlmondClient {
 			console.log(JSON.stringify(resp));
 			mq.resolve(resp);
 			mq = null;
-			delete this.messageQueue[mii];
+			delete this[messageQueue][mii];
 			console.log(TAG, 'request resolved');
 			return;
 		}
@@ -231,8 +246,8 @@ class AlmondClient {
 	cancelRequest(mii) {
 		console.log(TAG, 'cancelling request with mii:', mii);
 
-		if (this.messageQueue.hasOwnProperty(mii)) {
-			let mq = this.messageQueue[mii];
+		if (this[messageQueue].hasOwnProperty(mii)) {
+			let mq = this[messageQueue][mii];
 			const resp = {
 				mii: mii,
 				sent: mq.sent,
@@ -243,7 +258,7 @@ class AlmondClient {
 			};
 			mq.reject(resp);
 			mq = null;
-			delete this.messageQueue[mii];
+			delete this[messageQueue][mii];
 			console.log(TAG, 'request cancelled');
 			return true;
 		}
@@ -261,10 +276,11 @@ class AlmondClient {
 	 * All messages from the websocket are received here
 	 *
 	 * @since 1.0.0
+	 * @private
 	 * @param {String} message Message from websocket
 	 */
-	onmessage(message) {
-		console.log(TAG, 'onmessage');
+	[messageHandler](message) {
+		console.log(TAG, 'handling websocket message...');
 
 		if (!message.hasOwnProperty('data')) return;
 		const d = message.data;
@@ -285,8 +301,15 @@ class AlmondClient {
 		// TODO: else, could be device event/update message
 	}
 
-	onerror(error) {
-		// TODO: ?
+	/**
+	 * All errors from the websocket are received here
+	 *
+	 * @since 1.0.0
+	 * @private
+	 * @param {Error} error
+	 */
+	[errorHandler](error) {
+		// TODO
 	}
 
 
