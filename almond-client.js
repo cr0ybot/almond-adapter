@@ -8,17 +8,17 @@
 
 'use strict';
 
-const TAG = 'AlmondController:';
+const TAG = 'AlmondClient:';
 
 const {Deferred} = require('gateway-addon');
 const WebSocket = require('ws');
 
 const miiLength = 16;
 
-class AlmondController {
+class AlmondClient {
 
 	/**
-	 * Initialize AlmondController with config
+	 * Initialize AlmondClient with config
 	 *
 	 * @since 1.0.0
 	 * @param {Object} config Add-on settings config
@@ -62,7 +62,7 @@ class AlmondController {
 	 * Connect to Almond websocket API
 	 *
 	 * @since 1.0.0
-	 * @return {Promise} Resolves with this AlmondController on success
+	 * @return {Promise} Resolves with this AlmondClient on success
 	 */
 	connect() {
 		return new Promise((resolve, reject) => {
@@ -308,4 +308,4 @@ class AlmondController {
 	}
 }
 
-module.exports = AlmondController;
+module.exports = AlmondClient;

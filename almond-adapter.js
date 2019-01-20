@@ -12,7 +12,7 @@ const TAG = 'AlmondAdapter:';
 
 const {Adapter} = require('gateway-addon');
 
-const AlmondController = require('./almond-controller');
+const AlmondClient = require('./almond-client');
 const AlmondDevice = require('./almond-device');
 
 // This will get set to the contents of package.json within loadAlmondAdapter(),
@@ -21,7 +21,7 @@ let adapterManifest;
 
 class AlmondAdapter extends Adapter {
 
-	constructor(addonManager, packageName, controller) {
+	constructor(addonManager, packageName, client) {
 		// TODO: Is it worth supporting multiple Almonds?
 		super(addonManager, 'AlmondAdapter', packageName);
 
@@ -37,7 +37,7 @@ class AlmondAdapter extends Adapter {
 		 * ready
 		 */
 
-		this.controller = controller;
+		this.client = client;
 		this.ready = true;
 
 		this.pairingMii = null;
@@ -127,7 +127,7 @@ class AlmondAdapter extends Adapter {
 	startPairing(timeoutSeconds) {
 		console.log(TAG, 'starting pairing mode');
 
-		this.controller.getDeviceList()
+		this.client.getDeviceList()
 		.then((deviceList) => {
 			clearTimeout(this.pairingTimer);
 
@@ -148,7 +148,7 @@ class AlmondAdapter extends Adapter {
 		clearTimeout(this.pairingTimer);
 
 		console.log(TAG, 'cancelling pairing mode');
-		this.controller.cancelGetDeviceList();
+		this.client.cancelGetDeviceList();
 	}
 
 	/**
@@ -157,9 +157,9 @@ class AlmondAdapter extends Adapter {
 	 * @return {Promise} Promise to unload
 	 */
 	unload() {
-		return this.controller.disconnect()
+		return this.client.disconnect()
 		.then(() => {
-			this.controller = null;
+			this.client = null;
 		});
 	}
 }
@@ -171,15 +171,15 @@ function loadAlmondAdapter(addonManager, manifest, errorCallback) {
 	adapterManifest = manifest;
 	const c = manifest.moziot.config.AlmondLogin;
 
-	// Attempt to start controller, pass to adapter constructor
+	// Attempt to start client, pass to adapter constructor
 	// or invoke errorCallback
-	new AlmondController(c)
+	new AlmondClient(c)
 	.connect()
 	.catch((e) => {
 		errorCallback(manifest.id, e);
 	})
-	.then((controller) => {
-		new AlmondAdapter(addonManager, manifest.name, controller);
+	.then((client) => {
+		new AlmondAdapter(addonManager, manifest.name, client);
 	});
 }
 
