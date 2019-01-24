@@ -9,16 +9,53 @@
 'use strict';
 
 const TAG = 'AlmondDevice:';
+const CAPABILITIES = [
+	'@type',
+	'description',
+	'links',
+];
 
 const {Device} = require('gateway-addon');
+const AlmondProperty = require('./almond-property');
 
 class AlmondDevice extends Device {
 
-	constructor(adapter, id, data) {
+	constructor(adapter, id, name, capabilities) {
 		super(adapter, id);
 
-		this.info = data.Data;
-		this.name = data.Data.Name;
+		this.name = name;
+
+		for (const field of CAPABILITIES) {
+			if (capabilities.hasOwnProperty(field)) {
+				this[field] = capabilities[field];
+			}
+		}
+
+		if (capabilities.hasOwnProperty('properties')) {
+			for (const [index, desc] of Object.entries(capabilities.properties)) {
+				this.addProperty(index, desc, desc.value);
+			}
+		}
+
+		if (capabilities.hasOwnProperty('actions')) {
+			// TODO: set actions map
+		}
+
+		if (capabilities.hasOwnProperty('events')) {
+			// TODO: set events map
+		}
+	}
+
+	addProperty(index, description, value) {
+		// TODO: AlmondProperty class with index
+		const prop = new AlmondProperty(this, description.name, description, value);
+		this.properties.set(description.name, prop);
+	}
+
+	asDict() {
+		const dict = super.asDict();
+
+		return dict;
 	}
 }
 

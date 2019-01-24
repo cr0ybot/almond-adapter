@@ -9,17 +9,19 @@
 'use strict';
 
 const TAG = 'AlmondClient:';
+const MII_LENGTH = 24;
+const MESSAGE_TIMEOUT = 60000;
 
 const {Deferred} = require('gateway-addon');
 const WebSocket = require('ws');
-
-const miiLength = 16;
+const deviceMap = require('./almond-device-map');
 
 /**
  * Symbols for private methods
  */
 const messageHandler = Symbol('messageHandler');
 const errorHandler = Symbol('errorHandler');
+const mapDeviceCapabilities = Symbol('mapDeviceCapabilities');
 
 /**
  * Symbols for private properties
@@ -152,6 +154,22 @@ class AlmondClient {
 				return resp.received.Devices;
 			}
 			return {};
+		})
+		.then((deviceList) => {
+			const devices = [];
+			for (const [id, info] of Object.entries(deviceList)) {
+				const capabilities = this[mapDeviceCapabilities](info);
+				if (capabilities) {
+					console.log(TAG, 'found Almond device:', id);
+					console.log(JSON.stringify(info.Data));
+					devices.push({id: id, name: info.Data.Name, capabilities: capabilities});
+				}
+				else {
+					console.warn(TAG, 'device type unknown:', id);
+					console.warn(JSON.stringify(info));
+				}
+			}
+			return devices;
 		});
 	}
 
@@ -318,6 +336,50 @@ class AlmondClient {
 	 */
 
 	/**
+	 * Maps DeviceList info to WoT Capability Schema
+	 *
+	 * @since 1.0.0
+	 * @private
+	 * @param {Object} info Parsed JSON object from Almond DeviceList
+	 * @return {Object} Capability schema object
+	 */
+	[mapDeviceCapabilities](info) {
+		if (!info.hasOwnProperty('Data') || !info.Data.hasOwnProperty('ID') || !info.Data.hasOwnProperty('Type')) return false;
+
+		const id = info.Data.ID;
+		const type = info.Data.Type;
+
+		if (!deviceMap.hasOwnProperty(type)) return false;
+		const map = deviceMap[type];
+
+		// Set current values
+		for (const [i, prop] of Object.entries(map.properties)) {
+			if (info.DeviceValues && info.DeviceValues.hasOwnProperty(i)) {
+				let value = info.DeviceValues[i].Value;
+				switch (prop.type) {
+					case 'integer':
+						value = parseInt(value);
+						break;
+					case 'number':
+						value = Number(value);
+						break;
+					case 'boolean':
+						value = value == 'true';
+						break;
+					/*
+					default:
+						prop.value = value;
+						break;
+					*/
+				}
+				map.properties[i].value = value;
+			}
+		}
+
+		return map;
+	}
+
+	/**
 	 * Generates a MobileInternalIndex (mii) for requests to the WebSocket API
 	 *
 	 * Responses from the API are matched with the mii.
@@ -326,8 +388,10 @@ class AlmondClient {
 	 * @return {String} MobileInternalIndex
 	 */
 	generateMii() {
-		// eslint-disable-next-line
-		return '' + Math.floor(Math.pow(10, miiLength - 1) + Math.random() * (Math.pow(10, miiLength) - Math.pow(10, miiLength - 1) - 1));
+		return (Math.floor(
+			Math.pow(10, MII_LENGTH - 1) + Math.random() *
+			(Math.pow(10, MII_LENGTH) - Math.pow(10, MII_LENGTH - 1) - 1)
+		)).toString();
 	}
 }
 

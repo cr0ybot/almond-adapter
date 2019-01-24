@@ -51,6 +51,7 @@ class AlmondAdapter extends Adapter {
 	/**
 	 * Dump adapter state to log
 	 *
+	 * @since 1.0.0
 	 * @override
 	 */
 	dump() {
@@ -61,11 +62,14 @@ class AlmondAdapter extends Adapter {
 	/**
 	 * Add a device to be managed by the adapter
 	 *
-	 * @param {String} deviceId
-	 * @param {Object} deviceInfo Information about the device from the Almond
+	 * @since 1.0.0
+	 * @param {string} deviceId
+	 * @param {string} deviceName
+	 * @param {Object} deviceCapabilities Capabilities of the device
+	 *        (see {@link https://mozilla-iot.github.io/schemas/})
 	 * @return {Promise} Promise to add device
 	 */
-	addDevice(deviceId, deviceInfo) {
+	addDevice(deviceId, deviceName, deviceCapabilities) {
 		// I like promises, but not sure if it's necessary here
 		return new Promise((resolve, reject) => {
 			if (deviceId in this.devices) {
@@ -73,8 +77,8 @@ class AlmondAdapter extends Adapter {
 				reject(`Device ${deviceId} already exists.`);
 			}
 			else {
-				console.log(TAG, `adding device: ${deviceId} ${deviceInfo.Data.Name}`);
-				const device = new AlmondDevice(this, deviceId, deviceInfo);
+				console.log(TAG, `adding device: ${deviceId} ${deviceName}`);
+				const device = new AlmondDevice(this, deviceId, deviceName, deviceCapabilities);
 				this.handleDeviceAdded(device);
 				resolve(device);
 			}
@@ -84,6 +88,7 @@ class AlmondAdapter extends Adapter {
 	/**
 	 * Remove device from being managed by the adapter
 	 *
+	 * @since 1.0.0
 	 * @param {String} deviceId
 	 * @return {Promise} Promise to remove the device
 	 */
@@ -105,15 +110,22 @@ class AlmondAdapter extends Adapter {
 	/**
 	 * Add all devices in the device list returned from the Almond
 	 *
-	 * @param {Object} deviceList List of Almond devices
+	 * @since 1.0.0
+	 * @param {Object[]} deviceList List of Almond devices
+	 * @param {string} deviceList[].id ID of Almond device
+	 * @param {string} deviceList[].capabilities Capabilities of the device
+	 *        (see {@link https://mozilla-iot.github.io/schemas/})
+	 * @param {Object} [deviceList[].capabilities.properties]
+	 * @param {Object} [deviceList[].capabilities.actions]
+	 * @param {Object} [deviceList[].capabilities.events]
 	 */
 	addAllDevices(deviceList) {
 		console.log(TAG, 'adding devices...');
 
-		for (const [id, info] of Object.entries(deviceList)) {
-			console.log(TAG, 'found device:', id);
-			console.log(JSON.stringify(info.Data));
-			this.addDevice(id, info);
+		for (const {id, name, capabilities} of deviceList) {
+			console.log(TAG, 'found device:', id, name);
+			console.log(capabilities);
+			this.addDevice(id, name, capabilities);
 		}
 	}
 
@@ -121,6 +133,7 @@ class AlmondAdapter extends Adapter {
 	 * Start "pairing mode" which is simply sending a request to the Almond for
 	 * connected devices. We honor the timeout.
 	 *
+	 * @since 1.0.0
 	 * @override
 	 * @param {Number} timeoutSeconds Seconds to run before timeout
 	 */
@@ -142,6 +155,7 @@ class AlmondAdapter extends Adapter {
 	 * messages expecting responses. It is likely that the Almond will have
 	 * already responded before this can be reasonably called.
 	 *
+	 * @since 1.0.0
 	 * @override
 	 */
 	cancelPairing() {
@@ -154,6 +168,7 @@ class AlmondAdapter extends Adapter {
 	/**
 	 * Unload the adapter, which is mostly closing the websocket.
 	 *
+	 * @since 1.0.0
 	 * @return {Promise} Promise to unload
 	 */
 	unload() {
