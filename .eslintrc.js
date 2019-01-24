@@ -172,7 +172,10 @@ module.exports = {
     'prefer-template': 'warn',
     'quote-props': [
       'error',
-      'as-needed'
+      'as-needed',
+      {
+        "numbers": true
+      }
     ],
     'quotes': [
       'error',
