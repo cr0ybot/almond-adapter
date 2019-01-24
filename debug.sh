@@ -25,4 +25,4 @@ cd ~/mozilla-iot/gateway
 # a debugger unless the gateway debug script is altered to read:
 # "webpack && node --inspect=0.0.0.0:9229 build/gateway.js"
 #npm run debug -- -d
-npm start -- -d
+npm run run-only -- -d
