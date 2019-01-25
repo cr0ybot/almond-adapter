@@ -21,7 +21,7 @@ let adapterManifest;
 
 class AlmondAdapter extends Adapter {
 
-	constructor(addonManager, packageName, client) {
+	constructor(addonManager, packageName, client, ip) {
 		// TODO: Is it worth supporting multiple Almonds?
 		super(addonManager, 'AlmondAdapter', packageName);
 
@@ -38,10 +38,20 @@ class AlmondAdapter extends Adapter {
 		 */
 
 		this.client = client;
-		this.ready = true;
+		this.ip = ip;
+		this.ready = false;
 
 		this.pairingMii = null;
 		this.pairingTimer = null;
+
+		this.scanDevices()
+		.then((deviceList) => {
+			return this.addAllDevices(deviceList);
+		})
+		/* eslint-disable-next-line */
+		.then((devices) => {
+			this.ready = true;
+		});
 
 		this.manager.addAdapter(this);
 
@@ -70,7 +80,6 @@ class AlmondAdapter extends Adapter {
 	 * @return {Promise} Promise to add device
 	 */
 	addDevice(deviceId, deviceName, deviceCapabilities) {
-		// I like promises, but not sure if it's necessary here
 		return new Promise((resolve, reject) => {
 			if (deviceId in this.devices) {
 				console.warn(TAG, `adding device failed: ${deviceId} already exists!`);
@@ -118,15 +127,24 @@ class AlmondAdapter extends Adapter {
 	 * @param {Object} [deviceList[].capabilities.properties]
 	 * @param {Object} [deviceList[].capabilities.actions]
 	 * @param {Object} [deviceList[].capabilities.events]
+	 * @returns {Promise} Promise that resolves regardless if any devices were rejected
 	 */
 	addAllDevices(deviceList) {
 		console.log(TAG, 'adding devices...');
 
+		const promises = [];
+
 		for (const {id, name, capabilities} of deviceList) {
 			console.log(TAG, 'found device:', id, name);
 			console.log(capabilities);
-			this.addDevice(id, name, capabilities);
+			promises.push(this.addDevice(id, name, capabilities));
 		}
+
+		return Promise.all(promises.map((p) => p.catch((e) => e)));
+	}
+
+	scanDevices() {
+		return this.client.getDeviceList();
 	}
 
 	/**
@@ -138,9 +156,14 @@ class AlmondAdapter extends Adapter {
 	 * @param {Number} timeoutSeconds Seconds to run before timeout
 	 */
 	startPairing(timeoutSeconds) {
+		if (this.pairingTimer) {
+			console.warn(TAG, 'not initiating pairing: already in progress');
+			return;
+		}
+
 		console.log(TAG, 'starting pairing mode');
 
-		this.client.getDeviceList()
+		this.scanDevices()
 		.then((deviceList) => {
 			clearTimeout(this.pairingTimer);
 
@@ -194,7 +217,7 @@ function loadAlmondAdapter(addonManager, manifest, errorCallback) {
 		errorCallback(manifest.id, e);
 	})
 	.then((client) => {
-		new AlmondAdapter(addonManager, manifest.name, client);
+		new AlmondAdapter(addonManager, manifest.name, client, c.ipAddress);
 	});
 }
 
