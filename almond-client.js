@@ -13,7 +13,9 @@ const MII_LENGTH = 24;
 const MESSAGE_TIMEOUT = 60000;
 
 const {Deferred} = require('gateway-addon');
+const {EventEmitter} = require('events');
 const WebSocket = require('ws');
+
 const deviceMap = require('./almond-device-map');
 
 /**
@@ -30,7 +32,7 @@ const ws = Symbol('ws');
 const messageQueue = Symbol('messageQueue');
 const cancellable = Symbol('cancellable');
 
-class AlmondClient {
+class AlmondClient extends EventEmitter {
 
 	/**
 	 * Initialize AlmondClient with config
@@ -45,6 +47,8 @@ class AlmondClient {
 		if (!ipAddress || !username || !password) {
 			throw new Error('Could not connect to Almond: configuration incomplete');
 		}
+
+		super();
 
 		this.config = arguments[0];
 		this[ws] = null;
@@ -90,8 +94,8 @@ class AlmondClient {
 				console.log(TAG, 'websocket opened');
 				this[ws].onmessage = this[messageHandler].bind(this);
 				this[ws].onerror = this[errorHandler].bind(this);
-				resolve(this);
 				this[ws].onopen = null;
+				resolve(this);
 			}.bind(this);
 			this[ws].onerror = function(err) {
 				console.error(TAG, 'websocket could not be opened');
@@ -316,7 +320,9 @@ class AlmondClient {
 		if (data.hasOwnProperty('MobileInternalIndex')) {
 			this.resolveRequest(data.MobileInternalIndex, data);
 		}
-		// TODO: else, could be device event/update message
+		else {
+			this.emit('message', data);
+		}
 	}
 
 	/**
