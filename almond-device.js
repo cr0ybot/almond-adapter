@@ -8,7 +8,7 @@
 
 'use strict';
 
-const TAG = 'AlmondDevice:';
+const TAG = 'AlmondDevice:'; // eslint-disable-line no-unused-vars
 const CAPABILITIES = [
 	'@type',
 	'description',
@@ -18,14 +18,18 @@ const CAPABILITIES = [
 const {Device} = require('gateway-addon');
 const AlmondProperty = require('./almond-property');
 
+const deviceMap = require('./almond-device-map');
+
 class AlmondDevice extends Device {
 
-	constructor(adapter, almondId, id, name, capabilities, info) {
+	constructor(adapter, almondId, id, info) {
 		super(adapter, id);
 
-		this.almondID = almondId;
-		this.name = name;
+		this.almondId = almondId;
 		this.info = info;
+		this.name = info.Data.Name;
+
+		const capabilities = this.mapDeviceCapabilities(info);
 
 		for (const field of CAPABILITIES) {
 			if (capabilities.hasOwnProperty(field)) {
@@ -58,6 +62,54 @@ class AlmondDevice extends Device {
 		const dict = super.asDict();
 
 		return dict;
+	}
+
+
+	/**
+	 * Utilities
+	 */
+
+	/**
+	 * Maps DeviceList info to WoT Capability Schema
+	 *
+	 * @since 1.0.0
+	 * @param {Object} info Parsed JSON object from Almond DeviceList
+	 * @return {Object} Capability schema object
+	 */
+	mapDeviceCapabilities(info) {
+		if (!info.hasOwnProperty('Data') || !info.Data.hasOwnProperty('ID') || !info.Data.hasOwnProperty('Type')) return false;
+
+		//const id = info.Data.ID;
+		const type = info.Data.Type;
+
+		if (!deviceMap.hasOwnProperty(type)) return false;
+		const map = deviceMap[type];
+
+		// Set current values
+		for (const [i, prop] of Object.entries(map.properties)) {
+			if (info.DeviceValues && info.DeviceValues.hasOwnProperty(i)) {
+				let value = info.DeviceValues[i].Value;
+				switch (prop.type) {
+					case 'integer':
+						value = parseInt(value);
+						break;
+					case 'number':
+						value = Number(value);
+						break;
+					case 'boolean':
+						value = value == 'true';
+						break;
+					/*
+					default:
+						prop.value = value;
+						break;
+					*/
+				}
+				map.properties[i].value = value;
+			}
+		}
+
+		return map;
 	}
 }
 

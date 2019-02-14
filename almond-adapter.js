@@ -8,7 +8,7 @@
 
 'use strict';
 
-const TAG = 'AlmondAdapter:';
+const TAG = 'AlmondAdapter:'; // eslint-disable-line no-unused-vars
 
 const {Adapter} = require('gateway-addon');
 
@@ -17,7 +17,7 @@ const AlmondDevice = require('./almond-device');
 
 // This will get set to the contents of package.json within loadAlmondAdapter(),
 // at which point we can reference config values in the `moziot` section
-let adapterManifest;
+let adapterManifest; // eslint-disable-line no-unused-vars
 
 class AlmondAdapter extends Adapter {
 
@@ -75,21 +75,20 @@ class AlmondAdapter extends Adapter {
 	 * Add a device to be managed by the adapter
 	 *
 	 * @since 1.0.0
-	 * @param {string} deviceId
-	 * @param {string} deviceName
-	 * @param {Object} deviceCapabilities Capabilities of the device
-	 *        (see {@link https://mozilla-iot.github.io/schemas/})
+	 * @param {string} almondId
+	 * @param {Object} deviceInfo
 	 * @return {Promise} Promise to add device
 	 */
-	addDevice(almondId, deviceId, deviceName, deviceCapabilities) {
+	addDevice(almondId, deviceInfo) {
 		return new Promise((resolve, reject) => {
+			const deviceId = this.thingIdFromAlmondId(almondId);
 			if (deviceId in this.devices) {
 				console.warn(TAG, `adding device failed: ${deviceId} already exists!`);
 				reject(`Device ${deviceId} already exists.`);
 			}
 			else {
-				console.log(TAG, `adding device: ${deviceId} ${deviceName}`);
-				const device = new AlmondDevice(this, almondId, deviceId, deviceName, deviceCapabilities);
+				console.log(TAG, `adding device: ${deviceId}`);
+				const device = new AlmondDevice(this, almondId, deviceId, deviceInfo);
 				this.handleDeviceAdded(device);
 				resolve(device);
 			}
@@ -122,13 +121,7 @@ class AlmondAdapter extends Adapter {
 	 * Add all devices in the device list returned from the Almond
 	 *
 	 * @since 1.0.0
-	 * @param {Object[]} deviceList List of Almond devices
-	 * @param {string} deviceList[].id ID of Almond device
-	 * @param {string} deviceList[].capabilities Capabilities of the device
-	 *        (see {@link https://mozilla-iot.github.io/schemas/})
-	 * @param {Object} [deviceList[].capabilities.properties]
-	 * @param {Object} [deviceList[].capabilities.actions]
-	 * @param {Object} [deviceList[].capabilities.events]
+	 * @param {Object[]} deviceList List of devices from Almond API
 	 * @returns {Promise} Promise that resolves regardless if any devices were rejected
 	 */
 	addAllDevices(deviceList) {
@@ -136,10 +129,8 @@ class AlmondAdapter extends Adapter {
 
 		const promises = [];
 
-		for (const {id, name, capabilities, info} of deviceList) {
-			console.log(TAG, 'found device:', id, name);
-			//console.log(capabilities);
-			promises.push(this.addDevice(id, this.thingIdFromAlmondId(id), name, capabilities, info));
+		for (const [id, info] of Object.entries(deviceList)) {
+			promises.push(this.addDevice(id, info));
 		}
 
 		return Promise.all(promises.map((p) => p.catch((e) => e)));

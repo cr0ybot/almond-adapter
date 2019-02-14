@@ -8,7 +8,7 @@
 
 'use strict';
 
-const TAG = 'AlmondProperty:';
+const TAG = 'AlmondProperty:'; // eslint-disable-line no-unused-vars
 
 const {Property} = require('gateway-addon');
 
