@@ -20,12 +20,12 @@ const AlmondProperty = require('./almond-property');
 
 class AlmondDevice extends Device {
 
-	constructor(adapter, id, name, capabilities) {
-		const ipID = `${adapter.ip}-${id}`;
-		super(adapter, ipID);
+	constructor(adapter, almondId, id, name, capabilities, info) {
+		super(adapter, id);
 
-		this.almondID = id;
+		this.almondID = almondId;
 		this.name = name;
+		this.info = info;
 
 		for (const field of CAPABILITIES) {
 			if (capabilities.hasOwnProperty(field)) {

@@ -55,6 +55,8 @@ class AlmondAdapter extends Adapter {
 
 		this.manager.addAdapter(this);
 
+		this.client.on('deviceupdate', this.updateDevice);
+
 		console.log(TAG, 'initialized');
 	}
 
@@ -79,7 +81,7 @@ class AlmondAdapter extends Adapter {
 	 *        (see {@link https://mozilla-iot.github.io/schemas/})
 	 * @return {Promise} Promise to add device
 	 */
-	addDevice(deviceId, deviceName, deviceCapabilities) {
+	addDevice(almondId, deviceId, deviceName, deviceCapabilities) {
 		return new Promise((resolve, reject) => {
 			if (deviceId in this.devices) {
 				console.warn(TAG, `adding device failed: ${deviceId} already exists!`);
@@ -87,7 +89,7 @@ class AlmondAdapter extends Adapter {
 			}
 			else {
 				console.log(TAG, `adding device: ${deviceId} ${deviceName}`);
-				const device = new AlmondDevice(this, deviceId, deviceName, deviceCapabilities);
+				const device = new AlmondDevice(this, almondId, deviceId, deviceName, deviceCapabilities);
 				this.handleDeviceAdded(device);
 				resolve(device);
 			}
@@ -134,10 +136,10 @@ class AlmondAdapter extends Adapter {
 
 		const promises = [];
 
-		for (const {id, name, capabilities} of deviceList) {
+		for (const {id, name, capabilities, info} of deviceList) {
 			console.log(TAG, 'found device:', id, name);
-			console.log(capabilities);
-			promises.push(this.addDevice(id, name, capabilities));
+			//console.log(capabilities);
+			promises.push(this.addDevice(id, this.thingIdFromAlmondId(id), name, capabilities, info));
 		}
 
 		return Promise.all(promises.map((p) => p.catch((e) => e)));
@@ -186,6 +188,22 @@ class AlmondAdapter extends Adapter {
 
 		console.log(TAG, 'cancelling pairing mode');
 		this.client.cancelGetDeviceList();
+	}
+
+	updateDevice(e) {
+		if (e.hasOwnProperty('Devices')) {
+			for (const [id, values] of Object.entries(e.Devices)) {
+				// update device with values
+			}
+		}
+	}
+
+	thingIdFromAlmondId(almondId) {
+		return `${almondId}-${this.ip}`;
+	}
+
+	almondIdFromThingId(id) {
+		return id.split('-')[1];
 	}
 
 	/**

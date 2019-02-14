@@ -165,8 +165,8 @@ class AlmondClient extends EventEmitter {
 				const capabilities = this[mapDeviceCapabilities](info);
 				if (capabilities) {
 					console.log(TAG, 'found Almond device:', id);
-					console.log(JSON.stringify(info.Data));
-					devices.push({id: id, name: info.Data.Name, capabilities: capabilities});
+					//console.log(JSON.stringify(info.Data));
+					devices.push({id: id, name: info.Data.Name, capabilities: capabilities, info: info.Data});
 				}
 				else {
 					console.warn(TAG, 'device type unknown:', id);
@@ -320,8 +320,15 @@ class AlmondClient extends EventEmitter {
 		if (data.hasOwnProperty('MobileInternalIndex')) {
 			this.resolveRequest(data.MobileInternalIndex, data);
 		}
-		else {
-			this.emit('message', data);
+		else if (data.hasOwnProperty('CommandType')) {
+			switch (data.CommandType) {
+				case 'DynamicIndexUpdated':
+					this.emit('deviceupdate', data);
+					break;
+				default:
+					this.emit('message', data);
+					break;
+			}
 		}
 	}
 
